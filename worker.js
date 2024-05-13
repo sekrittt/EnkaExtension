@@ -16,7 +16,7 @@ async function getInfo(uid, tab, lang) {
     for (const char of data.data) {
         let obj = {
             top: `${((char.calculations.fit.ranking / char.calculations.fit.outOf) * 100).toFixed(2)}%`,
-            // variant: char.calculations.fit.short
+            variant: `${char.calculations.fit.name} - ${char.calculations.fit.weapon.name} R${char.calculations.fit.weapon.refinement}`
         }
         result[await getNameInLanguage(char.name, lang)] = obj
     }
