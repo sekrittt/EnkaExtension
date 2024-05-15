@@ -19,7 +19,7 @@
         let texts = [
             `With Enka Extension CV is here)`,
             `Enka Extension will calculate the CV for you)`,
-            `"CV очень важна для сравнения сборок)" - © Enka Extension`
+            `"CV is very important for comparing builds)" - © Enka Extension.`
         ]
 
         let textWaiting = "Cards generated on the site don't have CV on them. Reason: CV is not real. Never look at CV to increase your damage or team performance."
@@ -66,6 +66,8 @@
                     charNameEl.append(t)
                     // critValueElement.querySelector("span").prepend(t)
                 }
+            } else {
+                charNameEl.querySelector(`#akashaTop`)?.remove()
             }
             waitStats = false
         })
@@ -197,6 +199,8 @@
                     charNameEl.append(t)
                     // critValueElement.querySelector("span").prepend(t)
                 }
+            } else {
+                charNameEl.querySelector(`#akashaTop`)?.remove()
             }
             if (didYouKnowEl !== null) {
                 didYouKnowUpdate.observe(didYouKnowEl, { childList: true, subtree: true, characterData: true })
