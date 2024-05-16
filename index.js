@@ -41,6 +41,50 @@
         let didYouKnowEl = document.querySelector("body > div > main > content > aside.DidYouKnow > blockquote")
         let charCard = document.querySelector("body > div > main > content > div.UID.fix.svelte-1bjby0 > div.card-scroll.svelte-bzo9tf > div.Card")
 
+        /**
+         *
+         * @param {{top: string, variant: string, allTops: {top: string, variant: string}[]}} obj
+         */
+        function setTop(obj) {
+            /** @type {HTMLDivElement?} */
+            let charNameEl = document.querySelector("body > div > main > content > div.UID.fix.svelte-1bjby0 > div.card-scroll.svelte-bzo9tf > div > div.card-host.svelte-bzo9tf > div.section.left.svelte-bzo9tf > div.name.svelte-bzo9tf")
+            console.log(obj, charNameEl)
+            if (charNameEl != null) {
+                charNameEl.style.position = `relative`
+
+                let t = document.createElement(`div`)
+                t.id = `akashaTop`
+                t.textContent = `Top: ${obj.top}`
+                t.style.fontSize = `60%`
+                t.style.color = `#ddd`
+                t.style.zIndex = `9999999999`
+                t.style.pointerEvents = `all`
+                // t.title = `Категория: ${stats[charName].variant}`
+                let tooltip = document.createElement(`div`)
+                tooltip.style.position = `absolute`
+                tooltip.style.top = `100%`
+                tooltip.style.padding = `5px`
+                tooltip.style.backgroundColor = `#000000`
+                tooltip.style.opacity = `0`
+                charNameEl.querySelector(`#akashaTop`)?.remove()
+                charNameEl.append(t)
+                charNameEl.append(tooltip)
+                t.addEventListener(`mouseenter`, () => {
+                    tooltip.style.opacity = `1`
+                })
+                t.addEventListener(`mouseleave`, () => {
+                    tooltip.style.opacity = `0`
+                })
+
+                for (const top of obj.allTops) {
+                    let f = document.createElement(`div`)
+                    f.textContent = `${top.variant}, Top: ${top.top}`
+                    f.style.color = `#fff`
+                    t.style.fontSize = `60%`
+                    tooltip.append(f)
+                }
+            }
+        }
 
         chrome.runtime.onMessage.addListener((request) => {
             if (!waitStats)
@@ -52,20 +96,7 @@
             let charNameEl = document.querySelector("body > div > main > content > div.UID.fix.svelte-1bjby0 > div.card-scroll.svelte-bzo9tf > div > div.card-host.svelte-bzo9tf > div.section.left.svelte-bzo9tf > div.name.svelte-bzo9tf")
             let charName = charNameEl.childNodes[0].textContent
             if (stats.hasOwnProperty(charName)) {
-                if (critValueElement != null) {
-                    // let t = new Text()
-                    let t = document.createElement(`div`)
-                    t.id = `akashaTop`
-                    t.textContent = `Top: ${stats[charName].top}`
-                    t.style.fontSize = `60%`
-                    t.style.color = `#ddd`
-                    t.style.zIndex = `9999999999`
-                    t.style.pointerEvents = `all`
-                    t.title = `Категория: ${stats[charName].variant}`
-                    charNameEl.querySelector(`#akashaTop`)?.remove()
-                    charNameEl.append(t)
-                    // critValueElement.querySelector("span").prepend(t)
-                }
+                setTop(stats[charName])
             } else {
                 charNameEl.querySelector(`#akashaTop`)?.remove()
             }
@@ -187,17 +218,19 @@
                     // let t = new Text()
                     // t.textContent = `Top: ${stats[charName].top} `
 
-                    let t = document.createElement(`div`)
-                    t.id = `akashaTop`
-                    t.textContent = `Top: ${stats[charName].top}`
-                    t.style.fontSize = `60%`
-                    t.style.color = `#ddd`
-                    t.style.zIndex = `9999999999`
-                    t.style.pointerEvents = `all`
-                    t.title = `Категория: ${stats[charName].variant}`
-                    charNameEl.querySelector(`#akashaTop`)?.remove()
-                    charNameEl.append(t)
+                    // let t = document.createElement(`div`)
+                    // t.id = `akashaTop`
+                    // t.textContent = `Top: ${stats[charName].top}`
+                    // t.style.fontSize = `60%`
+                    // t.style.color = `#ddd`
+                    // t.style.zIndex = `9999999999`
+                    // t.style.pointerEvents = `all`
+                    // t.title = `Категория: ${stats[charName].variant}`
+                    // charNameEl.querySelector(`#akashaTop`)?.remove()
+                    // charNameEl.append(t)
                     // critValueElement.querySelector("span").prepend(t)
+
+                    setTop(stats[charName])
                 }
             } else {
                 charNameEl.querySelector(`#akashaTop`)?.remove()
