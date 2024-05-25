@@ -4,39 +4,52 @@
 
 /**
  *
- * @param {string} charId
+ * @param {string} charMd5
  * @param {string} uid
  * @param {string?} variant
+ * @returns {Promise<{variant: string, top: string}[]>}
  */
-async function getAllTops(charId, uid, variant = null) {
-    let resCategories = await fetch(`https://akasha.cv/api/v2/leaderboards/categories?characterId=${charId}`)
+async function getAllTops(charMd5, uid, variant = null) {
+    let resCategories = await fetch(`https://akasha.cv/api/leaderboards/${uid}/${charMd5}`)
     let categories = await resCategories.json()
     let result = []
-    for (const category of categories.data) {
-        for (const weapon of category.weapons) {
+
+    for (const calculationId in categories.data.calculations) {
+        if (Object.hasOwnProperty.call(categories.data.calculations, calculationId)) {
+            const calculation = categories.data.calculations[calculationId];
             let obj = {
-                variant: ``,
-                top: ``
+                category: ``,
+                ranking: 0,
+                outOf: 0
             }
-            let [resVar, resVar2] = await Promise.all([
-                fetch(`https://akasha.cv/api/leaderboards?sort=calculation.result&order=-1&size=1&page=1&filter=[all]1&uids=[uid]${uid}&p=&fromId=&uid=${variant ? "&variant=" + variant : ""}&calculationId=${weapon.calculationId}`),
-                fetch(`https://akasha.cv/api/leaderboards?sort=calculation.result&order=-1&size=1&page=1&filter=1&uids=&p=&fromId=&uid=${variant ? "&variant=" + variant : ""}&calculationId=${weapon.calculationId}`)
-            ])
-            let [v, v2] = await Promise.all([resVar.json(), resVar2.json()])
-            let posInTop = v.data[0].index
-            let resVar3 = await fetch(`https://akasha.cv/api/getCollectionSize/?variant=charactersLb&hash=${v2.totalRowsHash}`)
-            let v3 = await resVar3.json()
-            let outOf = v3.totalRows
-            if ((posInTop / outOf) < 0.001) {
-                obj.top = `${posInTop}/${outOf}`
-            } else {
-                obj.top = `${((posInTop / outOf) * 100).toFixed(2)}%`
+            if (typeof variant === `string` && typeof calculation.variant !== `undefined`) {
+                if (variant != calculation.variant.name) {
+                    console.log(variant, calculation.variant.name)
+                    continue
+                }
             }
-            obj.variant = `${category.name} - ${weapon.name} R${weapon.refinement}`
+            obj.ranking = calculation.ranking
+            obj.outOf = calculation.outOf
+            obj.category = `${calculation.name} - ${calculation.weapon.name} R${calculation.weapon.refinement}`
+            if (typeof calculation.variant !== `undefined`) {
+                obj.category = `${obj.category} (${calculation.variant.displayName})`
+            }
             result.push(obj)
         }
     }
-    return result
+
+    return result.sort((a, b) => ((a.ranking / a.outOf) - (b.ranking / b.outOf))).map(el => {
+        obj = {
+            category: el.category,
+            top: ``
+        }
+        if ((el.ranking / el.outOf) < 0.001) {
+            obj.top = `${el.ranking}/${el.outOf}`
+        } else {
+            obj.top = `${((el.ranking / el.outOf) * 100).toFixed(2)}%`
+        }
+        return obj
+    })
 }
 
 async function getNameInLanguage(name, lang) {
@@ -51,7 +64,7 @@ async function getInfo(uid, tab, lang) {
     let data = await res.json()
     let result = {}
     for (const char of data.data) {
-        let allTops = await getAllTops(char.characterId, uid, char.calculations.fit.variant?.name)
+        let allTops = await getAllTops(char.md5, uid, char.calculations.fit.variant?.name)
         let top = ``
         if ((char.calculations.fit.ranking / char.calculations.fit.outOf) < 0.001) {
             top = `${char.calculations.fit.ranking}/${char.calculations.fit.outOf}`
@@ -60,8 +73,11 @@ async function getInfo(uid, tab, lang) {
         }
         let obj = {
             top,
-            variant: `${char.calculations.fit.name} - ${char.calculations.fit.weapon.name} R${char.calculations.fit.weapon.refinement}`,
+            category: `${char.calculations.fit.name} - ${char.calculations.fit.weapon.name} R${char.calculations.fit.weapon.refinement}`,
             allTops
+        }
+        if (typeof char.calculations.fit.variant !== `undefined`) {
+            obj.category = `${obj.category} (${char.calculations.fit.variant.displayName})`
         }
         result[await getNameInLanguage(char.name, lang)] = obj
         console.log(result)
