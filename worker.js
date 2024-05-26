@@ -2,6 +2,8 @@
 //     console.log(await res.text())
 // })
 
+const current_version = 15 // 1.5 * 10
+
 /**
  *
  * @param {string} charMd5
@@ -59,10 +61,15 @@ async function getNameInLanguage(name, lang) {
 }
 
 async function getInfo(uid, tab, lang) {
-    await fetch(`https://akasha.cv/api/user/refresh/${uid}`)
+    try {
+        await fetch(`https://akasha.cv/api/user/refresh/${uid}`)
+    } catch {
+        console.warn(`Refresh skipped`)
+    }
     let res = await fetch(`https://akasha.cv/api/getCalculationsForUser/${uid}`)
     let data = await res.json()
     let result = {}
+    console.log(data)
     for (const char of data.data) {
         let allTops = await getAllTops(char.md5, uid, char.calculations.fit.variant?.name)
         let top = ``
@@ -84,6 +91,22 @@ async function getInfo(uid, tab, lang) {
     }
     chrome.tabs.sendMessage(tab.id, JSON.stringify(result))
 }
+
+setTimeout(async () => {
+    const TOKEN = ""
+    let res = await fetch("https://api.github.com/repos/sekrittt/EnkaExtension/git/refs/tags", {
+        headers: {
+            Accept: "application/vnd.github+json",
+            Authorization: `Bearer ${TOKEN}`,
+            "X-Github-Api-Version": "2022-11-28"
+        }
+    })
+    let tags = await res.json()
+    let lastTag = tags[tags.length - 1]
+    if (Math.floor(parseFloat([...lastTag.ref.matchAll(/refs\/tags\/Release-(.+)$/g)][0][1]) * 10) > current_version) {
+        // Show notify about new version
+    }
+}, 5 * 60 * 1000);
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     let { action, uid, lang } = JSON.parse(request)
