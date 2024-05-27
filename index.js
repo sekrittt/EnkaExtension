@@ -52,21 +52,53 @@
                 this.SSCRSpan.classList.add("svelte-13t52ml")
 
                 chrome.runtime.onMessage.addListener((request) => {
-                    if (!this.#waitStats)
-                        return
-                    if (this.charCard === null || this.charNameEl === null)
-                        return
-                    this.stats = JSON.parse(request)
-                    let charName = this.charNameEl.childNodes[0].textContent
-                    if (this.stats.hasOwnProperty(charName)) {
-                        this.setTop(this.stats[charName])
-                    } else {
-                        this.charNameEl.querySelector(`#akashaTop`)?.remove()
-                        document.getElementById(`allTopsHeader`)?.remove()
-                        document.getElementById(`allTopsCategories`)?.remove()
+                    let data = JSON.parse(request)
+                    if (data.from === `getInfo`) {
+                        if (!this.#waitStats)
+                            return
+                        if (this.charCard === null || this.charNameEl === null)
+                            return
+                        this.stats = data.result
+                        let charName = this.charNameEl.childNodes[0].textContent
+                        console.log(data.result)
+                        if (this.stats.hasOwnProperty(charName)) {
+                            // this.setTop(this.stats[charName])
+                        } else {
+                            this.charNameEl.querySelector(`#akashaTop`)?.remove()
+                            document.getElementById(`allTopsHeader`)?.remove()
+                            document.getElementById(`allTopsCategories`)?.remove()
+                        }
+                        this.#waitStats = false
+                    } else if (data.from === `hasUpdate` && document.getElementById(`hasUpdateNotification`) === null) {
+                        let notify = document.createElement(`div`)
+                        notify.id = `hasUpdateNotification`
+                        notify.style.setProperty("position", "fixed")
+                        notify.style.setProperty("bottom", "10px")
+                        notify.style.setProperty("right", "10px")
+                        notify.style.setProperty("padding", "10px")
+                        notify.style.setProperty("border-radius", "10px")
+                        notify.style.setProperty("background-color", "rgba(0,0,0,0.5)")
+                        notify.style.setProperty("backdrop-filter", "blur(5px)")
+                        notify.style.setProperty("color", "#eee")
+                        notify.style.setProperty("font-size", "16px")
+                        notify.style.setProperty("user-select", "none")
+                        notify.style.setProperty("cursor", "pointer")
+                        notify.style.setProperty("z-index", "9999999")
+                        notify.innerHTML = `Enka Extension has new version!<br>Click to download.`
+                        notify.addEventListener(`click`, () => {
+                            window.open(data.result.url, `__blank`)
+                        }, { once: true })
+                        document.body.append(notify)
                     }
-                    this.#waitStats = false
                 })
+
+                try {
+                    chrome.runtime.sendMessage(JSON.stringify({
+                        action: "checkHasUpdate"
+                    }))
+                } catch {
+                    location.reload()
+                }
             }
 
             get isProfile() {
@@ -176,7 +208,7 @@
             get charVariantsPanel() {
                 if (!this.isProfile)
                     return null
-                return document.querySelector("body > div > main div.profile-hoyo-layout.UID.svelte-13xvdh > div.card-host.fix.svelte-1meghby > ul.Tabs.svelte-1szmghj.publicProfile")
+                return document.querySelector("body > div > main div.profile-hoyo-layout.UID.svelte-13xvdh > div.card-host.fix.svelte-1meghby > ul.Tabs.svelte-1szmghj")
             }
 
             /**
@@ -185,7 +217,7 @@
             get charVariant() {
                 if (!this.isProfile)
                     return null
-                return document.querySelector("body > div > main div.profile-hoyo-layout.UID.svelte-13xvdh > div.card-host.fix.svelte-1meghby > ul.Tabs.svelte-1szmghj.publicProfile > li > div.Tab.saved.svelte-1szmghj.s > span")
+                return document.querySelector("body > div > main div.profile-hoyo-layout.UID.svelte-13xvdh > div.card-host.fix.svelte-1meghby > ul.Tabs.svelte-1szmghj > li > div.Tab.saved.svelte-1szmghj.s > span")
             }
 
             /**

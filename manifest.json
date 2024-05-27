@@ -2,7 +2,7 @@
     "name": "Enka Extension",
     "short_name": "Enka",
     "description": "Calculate Crit Value of Genshin character",
-    "version": "1.5",
+    "version": "1.3",
     "manifest_version": 3,
     "icons": {
         "16": "images/favicon-0.png",
@@ -28,7 +28,8 @@
         }
     ],
     "host_permissions": [
-        "https://akasha.cv/*"
+        "https://akasha.cv/*",
+        "https://api.github.com/*"
     ],
     "permissions": [
         "tabs"
