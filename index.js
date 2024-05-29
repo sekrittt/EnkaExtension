@@ -1,5 +1,31 @@
 (() => {
+    let inject = `(() => {
+        let oldPushState = history.pushState;
+        history.pushState = function pushState() {
+            let ret = oldPushState.apply(this, arguments);
+            window.dispatchEvent(new Event('pushstate'));
+            window.dispatchEvent(new Event('locationchange'));
+            return ret;
+        };
+        let oldReplaceState = history.replaceState;
+        history.replaceState = function replaceState() {
+            let ret = oldReplaceState.apply(this, arguments);
+            window.dispatchEvent(new Event('replacestate'));
+            window.dispatchEvent(new Event('locationchange'));
+            return ret;
+        };
+        window.addEventListener('popstate', () => {
+            window.dispatchEvent(new Event('locationchange'));
+        });
+        console.log("Script injected!")
+    })();`
+
     window.addEventListener("load", () => {
+
+        let script = document.createElement(`script`)
+        script.innerHTML = inject
+        // document.head.append(script)
+
         console.log("Hello Enka.network!")
 
         let extendedText = document.createElement(`div`)
@@ -24,19 +50,20 @@
 
         let textWaiting = "Cards generated on the site don't have CV on them. Reason: CV is not real. Never look at CV to increase your damage or team performance."
 
-        let didYouKnowEl = document.querySelector("body > div > main aside.DidYouKnow > blockquote")
+
         let didYouKnowUpdate = new MutationObserver(() => {
-            if (didYouKnowEl.querySelector('p')?.textContent.toLowerCase() === textWaiting.toLowerCase()) {
+            if (ext.didYouKnowEl.querySelector('p')?.textContent.toLowerCase() === textWaiting.toLowerCase()) {
                 let t = document.createElement("strong")
                 let br = document.createElement("br")
                 t.textContent = texts[Math.floor(Math.random() * 3)]
-                didYouKnowEl.querySelector('p')?.append(br)
-                didYouKnowEl.querySelector('p')?.append(t)
+                ext.didYouKnowEl.querySelector('p')?.append(br)
+                ext.didYouKnowEl.querySelector('p')?.append(t)
             }
         })
 
         let charVariantChanged = new MutationObserver(() => {
-            ext.initUI()
+            ext.updateCharTop()
+            ext.updateCritValue()
         })
 
         class Extension {
@@ -59,15 +86,7 @@
                         if (this.charCard === null || this.charNameEl === null)
                             return
                         this.stats = data.result
-                        let charName = this.charNameEl.childNodes[0].textContent
-                        console.log(data.result)
-                        if (this.stats.hasOwnProperty(charName)) {
-                            // this.setTop(this.stats[charName])
-                        } else {
-                            this.charNameEl.querySelector(`#akashaTop`)?.remove()
-                            document.getElementById(`allTopsHeader`)?.remove()
-                            document.getElementById(`allTopsCategories`)?.remove()
-                        }
+                        this.updateCharTop()
                         this.#waitStats = false
                     } else if (data.from === `hasUpdate` && document.getElementById(`hasUpdateNotification`) === null) {
                         let notify = document.createElement(`div`)
@@ -89,6 +108,11 @@
                             window.open(data.result.url, `__blank`)
                         }, { once: true })
                         document.body.append(notify)
+                    } else if (data.from === `checkURLUpdate`) {
+                        if (data.result.action === `init`) {
+                            this.#stats = null
+                            setTimeout(init, 5000)
+                        }
                     }
                 })
 
@@ -128,9 +152,9 @@
              */
             get subStatsCritDMGEl() {
                 if (this.isProfile) {
-                    return document.querySelector("body > div > main div.profile-hoyo-layout.UID.svelte-13xvdh > div.card-host.fix.svelte-1meghby > div > div.card-scroll.svelte-bzo9tf > div > div.subCount.svelte-bzo9tf > div > div.CRITICAL_HURT > span")
+                    return document.querySelector("body > div > main div.profile-hoyo-layout.UID > div.card-host.fix > div > div.card-scroll > div > div.subCount > div > div.CRITICAL_HURT > span")
                 }
-                return document.querySelector("body > div > main > content > div.UID.fix.svelte-1bjby0 > div.card-scroll.svelte-bzo9tf > div > div.subCount.svelte-bzo9tf > div.svelte-bzo9tf > div.CRITICAL_HURT > span")
+                return document.querySelector("body > div > main > content > div.UID.fix > div.card-scroll > div > div.subCount > div > div.CRITICAL_HURT > span")
             }
 
             /**
@@ -138,9 +162,9 @@
              */
             get subStatsCritRateEl() {
                 if (this.isProfile) {
-                    return document.querySelector("body > div > main div.profile-hoyo-layout.UID.svelte-13xvdh > div.card-host.fix.svelte-1meghby > div > div.card-scroll.svelte-bzo9tf > div > div.subCount.svelte-bzo9tf > div > div.CRITICAL > span")
+                    return document.querySelector("body > div > main div.profile-hoyo-layout.UID > div.card-host.fix > div > div.card-scroll > div > div.subCount > div > div.CRITICAL > span")
                 }
-                return document.querySelector("body > div > main > content > div.UID.fix.svelte-1bjby0 > div.card-scroll.svelte-bzo9tf > div > div.subCount.svelte-bzo9tf > div.svelte-bzo9tf > div.CRITICAL > span")
+                return document.querySelector("body > div > main > content > div.UID.fix > div.card-scroll > div > div.subCount > div > div.CRITICAL > span")
             }
 
             /**
@@ -148,9 +172,9 @@
             */
             get critPiece() {
                 if (this.isProfile) {
-                    return document.querySelector("body > div > main div.profile-hoyo-layout.UID.svelte-13xvdh > div.card-host.fix.svelte-1meghby > div > div.card-scroll.svelte-bzo9tf > div > div.card-host.svelte-bzo9tf > div.section.right.svelte-bzo9tf > div:nth-child(5) > div.mainstat.CRITICAL_HURT.svelte-14f9a6o > div:nth-child(2)") ?? document.querySelector("body > div > main div.profile-hoyo-layout.UID.svelte-13xvdh > div.card-host.fix.svelte-1meghby > div > div.card-scroll.svelte-bzo9tf > div > div.card-host.svelte-bzo9tf > div.section.right.svelte-bzo9tf > div:nth-child(5) > div.mainstat.CRITICAL.svelte-14f9a6o > div:nth-child(2)")
+                    return document.querySelector("body > div > main div.profile-hoyo-layout.UID > div.card-host.fix > div > div.card-scroll > div > div.card-host > div.section.right > div:nth-child(5) > div.mainstat.CRITICAL_HURT > div:nth-child(2)") ?? document.querySelector("body > div > main div.profile-hoyo-layout.UID > div.card-host.fix > div > div.card-scroll > div > div.card-host > div.section.right > div:nth-child(5) > div.mainstat.CRITICAL > div:nth-child(2)")
                 }
-                return document.querySelector("body > div > main > content > div.UID.fix.svelte-1bjby0 > div.card-scroll.svelte-bzo9tf > div > div.card-host.svelte-bzo9tf > div.section.right.svelte-bzo9tf > div:nth-child(5) > div.mainstat.CRITICAL_HURT.svelte-14f9a6o > div:nth-child(2)") ?? document.querySelector("body > div > main > content > div.UID.fix.svelte-1bjby0 > div.card-scroll.svelte-bzo9tf > div > div.card-host.svelte-bzo9tf > div.section.right.svelte-bzo9tf > div:nth-child(5) > div.mainstat.CRITICAL.svelte-14f9a6o > div:nth-child(2)")
+                return document.querySelector("body > div > main > content > div.UID.fix > div.card-scroll > div > div.card-host > div.section.right > div:nth-child(5) > div.mainstat.CRITICAL_HURT > div:nth-child(2)") ?? document.querySelector("body > div > main > content > div.UID.fix > div.card-scroll > div > div.card-host > div.section.right > div:nth-child(5) > div.mainstat.CRITICAL > div:nth-child(2)")
             }
 
             /**
@@ -180,16 +204,16 @@
              */
             get subStatsPanel() {
                 if (this.isProfile) {
-                    return document.querySelector("body > div > main div.profile-hoyo-layout.UID.svelte-13xvdh > div.card-host.fix.svelte-1meghby > div > div.card-scroll.svelte-bzo9tf > div > div.subCount.svelte-bzo9tf")
+                    return document.querySelector("body > div > main div.profile-hoyo-layout.UID > div.card-host.fix > div > div.card-scroll > div > div.subCount")
                 }
-                return document.querySelector("body > div > main > content > div.UID.fix.svelte-1bjby0 > div.card-scroll.svelte-bzo9tf > div > div.subCount.svelte-bzo9tf")
+                return document.querySelector("body > div > main > content > div.UID.fix > div.card-scroll > div > div.subCount")
             }
 
             /**
              * @returns {HTMLElement?}
             */
             get charCard() {
-                return document.querySelector("body > div > main div.card-scroll.svelte-bzo9tf > div.Card")
+                return document.querySelector("body > div > main div.card-scroll > div.Card")
             }
 
             /**
@@ -197,9 +221,9 @@
              */
             get charNameEl() {
                 if (this.isProfile) {
-                    return document.querySelector("body > div > main div.profile-hoyo-layout.UID.svelte-13xvdh > div.card-host.fix.svelte-1meghby > div > div.card-scroll.svelte-bzo9tf > div > div.card-host.svelte-bzo9tf > div.section.left.svelte-bzo9tf > div.name.svelte-bzo9tf")
+                    return document.querySelector("body > div > main div.profile-hoyo-layout.UID > div.card-host.fix > div > div.card-scroll > div > div.card-host > div.section.left > div.name")
                 }
-                return document.querySelector("body > div > main > content > div.UID.fix.svelte-1bjby0 > div.card-scroll.svelte-bzo9tf > div > div.card-host.svelte-bzo9tf > div.section.left.svelte-bzo9tf > div.name.svelte-bzo9tf")
+                return document.querySelector("body > div > main > content > div.UID.fix > div.card-scroll > div > div.card-host > div.section.left > div.name")
             }
 
             /**
@@ -208,7 +232,7 @@
             get charVariantsPanel() {
                 if (!this.isProfile)
                     return null
-                return document.querySelector("body > div > main div.profile-hoyo-layout.UID.svelte-13xvdh > div.card-host.fix.svelte-1meghby > ul.Tabs.svelte-1szmghj")
+                return document.querySelector("body > div > main div.profile-hoyo-layout.UID > div.card-host.fix > ul.Tabs")
             }
 
             /**
@@ -217,7 +241,7 @@
             get charVariant() {
                 if (!this.isProfile)
                     return null
-                return document.querySelector("body > div > main div.profile-hoyo-layout.UID.svelte-13xvdh > div.card-host.fix.svelte-1meghby > ul.Tabs.svelte-1szmghj > li > div.Tab.saved.svelte-1szmghj.s > span")
+                return document.querySelector("body > div > main div.profile-hoyo-layout.UID > div.card-host.fix > ul.Tabs > li > div.Tab.saved.s > span")?.textContent ?? null
             }
 
             /**
@@ -251,7 +275,11 @@
              * @returns {HTMLElement?}
              */
             get charPanel() {
-                return document.querySelector("body > div > main div.CharacterList.fix.svelte-itv4a1")
+                return document.querySelector("body > div > main div.CharacterList.fix")
+            }
+
+            get didYouKnowEl() {
+                return document.querySelector("body > div > main aside.DidYouKnow > blockquote")
             }
 
             /**
@@ -319,14 +347,15 @@
                 document.getElementById(`allTopsHeader`)?.remove()
                 document.getElementById(`allTopsCategories`)?.remove()
                 if (this.isProfile) {
-                    document.querySelector("body > div > main div.profile-hoyo-layout.UID.svelte-13xvdh > div.card-host.fix.svelte-1meghby > div > div.additions.svelte-u669bv").prepend(header, categories)
+                    document.querySelector("body > div > main div.profile-hoyo-layout.UID > div.card-host.fix > div > div.additions").prepend(header, categories)
                     return
                 }
                 if (tops.length > 0) {
-                    document.querySelector("body > div > main > content > div.UID.fix.svelte-1bjby0 > div.additions.svelte-u669bv").prepend(header, categories)
+                    document.querySelector("body > div > main > content > div.UID.fix > div.additions").prepend(header, categories)
                 }
             }
             initUI() {
+                this.updateCharTop()
                 if (this.subStatsCritDMG != 0 && this.critPieceIs === `CRIT_DMG`) {
                     this.SSCDMGSpan.textContent = `${(this.subStatsCritDMG + parseFloat(this.critPiece.textContent)).toFixed(1)}%`
                     if (this.subStatsCritDMGEl !== null) {
@@ -342,6 +371,26 @@
                     }
                 }
 
+                this.updateCritValue()
+
+                // if (this.subStatsPanel !== null && this.charVariantsPanel !== null) {
+                //     this.critValueElement.querySelector(`span`).textContent = `cv: ${((this.critPieceIs === "CRIT_DMG" ? parseFloat(this.critPiece.textContent) : 0) + this.subStatsCritDMG + (((this.critPieceIs === "CRIT_RATE" ? parseFloat(this.critPiece.textContent) : 0) + this.subStatsCritRate) * 2)).toFixed(1)}`
+                //     this.subStatsPanel.prepend(critValueElement)
+                // }
+                if (ext.charPanel !== null) {
+                    changedChar.observe(ext.charPanel, { childList: true, subtree: true, attributes: true }) // ???
+                }
+                if (this.didYouKnowEl !== null) {
+                    if (this.didYouKnowEl.querySelector('p')?.textContent.toLowerCase() === textWaiting.toLowerCase()) {
+                        let t = document.createElement("strong")
+                        let br = document.createElement("br")
+                        t.textContent = texts[Math.floor(Math.random() * 3)]
+                        this.didYouKnowEl.querySelector('p')?.append(br)
+                        this.didYouKnowEl.querySelector('p')?.append(t)
+                    }
+                }
+            }
+            updateCritValue() {
                 if (this.critValueElement === null && (this.subStatsCritDMGEl !== null || this.subStatsCritRateEl !== null)) {
                     let critValueElement = makeCVElement()
 
@@ -362,18 +411,19 @@
                 } else if (this.critValueElement !== null && (this.subStatsCritDMGEl !== null || this.subStatsCritRateEl !== null)) {
                     this.critValueElement.querySelector(`span`).textContent = `cv: ${((this.critPieceIs === "CRIT_DMG" ? parseFloat(this.critPiece.textContent) : 0) + this.subStatsCritDMG + (((this.critPieceIs === "CRIT_RATE" ? parseFloat(this.critPiece.textContent) : 0) + this.subStatsCritRate) * 2)).toFixed(1)}`
                 }
-
-                // if (this.subStatsPanel !== null && this.charVariantsPanel !== null) {
-                //     this.critValueElement.querySelector(`span`).textContent = `cv: ${((this.critPieceIs === "CRIT_DMG" ? parseFloat(this.critPiece.textContent) : 0) + this.subStatsCritDMG + (((this.critPieceIs === "CRIT_RATE" ? parseFloat(this.critPiece.textContent) : 0) + this.subStatsCritRate) * 2)).toFixed(1)}`
-                //     this.subStatsPanel.prepend(critValueElement)
-                // }
-
-
-
-                if (didYouKnowEl.querySelector('p')?.textContent.toLowerCase() === textWaiting.toLowerCase()) {
-                    let t = new Text()
-                    t.textContent = texts[Math.floor(Math.random() * 3)]
-                    didYouKnowEl.querySelector('p')?.append(t)
+            }
+            updateCharTop() {
+                if (this.charCard === null || this.charNameEl === null || this.#stats === null)
+                    return
+                let charName = this.charNameEl.childNodes[0].textContent
+                if (this.isProfile && this.charVariant !== null && this.#stats.hasOwnProperty(this.charVariant)) {
+                    this.setTop(this.#stats[this.charVariant])
+                } else if (this.#stats.hasOwnProperty(charName)) {
+                    this.setTop(this.#stats[charName])
+                } else {
+                    this.charNameEl.querySelector(`#akashaTop`)?.remove()
+                    document.getElementById(`allTopsHeader`)?.remove()
+                    document.getElementById(`allTopsCategories`)?.remove()
                 }
             }
             requestStats() {
@@ -382,7 +432,7 @@
                     chrome.runtime.sendMessage(JSON.stringify({
                         action: "getInfo",
                         uid: this.uidOrAccount,
-                        lang: document.querySelector("body > div > main > header > menu > div.Dropdown.svelte-1ao5jsp > div.Dropdown-selectedItem.svelte-1ao5jsp").textContent.toLowerCase()
+                        lang: document.querySelector("body > div > main > header > menu > div.Dropdown > div.Dropdown-selectedItem").textContent.toLowerCase()
                     }))
                 } catch (error) {
                     location.reload()
@@ -405,7 +455,7 @@
         let ext = new Extension()
 
         let changedChar = new MutationObserver(() => {
-
+            console.log(ext.charCard)
             let newUid = ext.isProfile ? [...location.href.matchAll(/https\:\/\/enka.network\/u\/(\w+?)\/.+?\/\d+?\/\d+?/g)][0][1] : [...location.href.matchAll(/https:\/\/enka\.network\/u\/(\d+)/g)][0][1]
             if (ext.charCard === null) {
                 ext.stats = null
@@ -414,8 +464,6 @@
                 }
                 return
             }
-
-            didYouKnowEl = document.querySelector("body > div > main aside.DidYouKnow > blockquote")
 
             ext.initUI()
 
@@ -442,8 +490,8 @@
                 document.getElementById(`allTopsHeader`)?.remove()
                 document.getElementById(`allTopsCategories`)?.remove()
             }
-            if (didYouKnowEl !== null) {
-                didYouKnowUpdate.observe(didYouKnowEl, { childList: true, subtree: true, characterData: true })
+            if (ext.didYouKnowEl !== null) {
+                didYouKnowUpdate.observe(ext.didYouKnowEl, { childList: true, subtree: true, attributes: true })
             }
         })
 
@@ -453,30 +501,36 @@
 
             ext.requestStats()
 
-            didYouKnowEl = document.querySelector("body > div > main aside.DidYouKnow > blockquote")
-
-            changedChar.observe(ext.charPanel, { childList: true, subtree: true, attributes: true }) // ???
             if (ext.isProfile) {
                 charVariantChanged.observe(ext.charVariantsPanel, { childList: true, subtree: true, attributes: true }) // ???
             }
-            didYouKnowUpdate.observe(didYouKnowEl, { childList: true, subtree: true, characterData: true })
+            if (ext.didYouKnowEl !== null) {
+                didYouKnowUpdate.observe(ext.didYouKnowEl, { childList: true, subtree: true, characterData: true })
+            }
 
             ext.initUI()
         }
 
-        let MOChangedPage = new MutationObserver(() => {
-            if (ext.supportsPage && !extensionInitialized && ext.charCard !== null) {
-                init()
-            } else if (!ext.supportsPage && extensionInitialized) {
-                extensionInitialized = false
-            }
-        })
-        MOChangedPage.observe(document.querySelector("body > div > main > header"), {
-            childList: true,
-            subtree: true,
-            attributes: true
-        })
+        // let MOChangedPage = new MutationObserver(() => {
+        //     console.log('Gav!')
+        //     if (ext.supportsPage && !extensionInitialized && ext.charCard !== null) {
+        //         init()
+        //     } else if (!ext.supportsPage && extensionInitialized) {
+        //         extensionInitialized = false
+        //     }
+        // })
+        // MOChangedPage.observe(document.querySelector("body > div > main > header"), {
+        //     childList: true,
+        //     subtree: true,
+        //     attributes: true
+        // })
 
+        // window.addEventListener(`locationchange`, () => {
+        //     console.log(`Gav`)
+        //     if (ext.supportsPage && ext.charCard !== null) {
+        //         init()
+        //     }
+        // })
         if (ext.supportsPage && !extensionInitialized && ext.charCard !== null) {
             init()
         }
